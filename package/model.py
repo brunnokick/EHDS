@@ -26,10 +26,9 @@ class ExoplanetClassier:
         self.X_test = None
         self.y_test = None
 
-        self.scaler = Scaler()
-
     def run_full(self):
         print("Run full")
+        self.scaler = Scaler()
         self.set_data()
         feature_columns = self.X_train.columns
 
@@ -40,7 +39,11 @@ class ExoplanetClassier:
         self.X_test = pd.DataFrame(
             columns=feature_columns, data=self.scaler.tranform(self.X_test)
         )
-        print("done")
+
+        self.set_model()
+        self.fit()
+        self.predict()
+        self.print_metrics()
 
     def set_data(self):
         print("set_data")
@@ -54,6 +57,36 @@ class ExoplanetClassier:
         self.y_test = self.df_test["LABEL"]
         print("done!")
 
+    def set_model(self):
+        print("set model")
+        self.model = DecisionTreeClassifier()
+        self.dump()
+
+    def fit(self, dump: bool = True):
+        print("fit")
+        self.model.fit(self.X_train, self.y_train)
+
+    def predict(self, X_test: pd.DataFrame = None, y_test: pd.DataFrame = None):
+        print("predict")
+        if X_test is None:
+            X_test = self.X_test
+        else:
+            self.X_test = X_test
+
+        if y_test is not None:
+            self.y_test = y_test
+
+        self.predicted = self.model.predict(X_test)
+        return self.predicted
+
+    def print_metrics(self):
+        print("print_metrics")
+        accuracy = round(accuracy_score(self.y_test, self.predicted), 4)
+        print(accuracy)
+
+    def dump(self, destination_folder: str = "model"):
+        joblib.dump(self.model, os.path.join(destination_folder, "classfier.joblib"))
+
 
 class Scaler:
     def __init__(self):
@@ -61,6 +94,7 @@ class Scaler:
 
     def fit(self, df: pd.DataFrame):
         self.scaler.fit(df)
+        self.dump()
 
     def tranform(self, df: pd.DataFrame) -> np.ndarray:
         return self.scaler.transform(df)
